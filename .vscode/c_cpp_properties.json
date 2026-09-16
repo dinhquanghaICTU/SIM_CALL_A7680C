@@ -2,21 +2,46 @@
     "configurations": [
         {
             "name": "STM32F103 StdPeriph",
+            "compileCommands": "${workspaceFolder}/compile_commands.json",
             "includePath": [
                 "${workspaceFolder}/User",
+                "${workspaceFolder}/User/**",
+                "${workspaceFolder}/User/inc",
+                "${workspaceFolder}/User/inc/**",
+                "${workspaceFolder}/User/src",
+                "${workspaceFolder}/User/src/**",
                 "${workspaceFolder}/Startup",
                 "${workspaceFolder}/Libraries/CMSIS/Include",
                 "${workspaceFolder}/Libraries/CMSIS/Device/ST/STM32F10x/Include",
-                "${workspaceFolder}/Libraries/STM32F10x_StdPeriph_Driver/inc"
+                "${workspaceFolder}/Libraries/STM32F10x_StdPeriph_Driver/inc",
+                "/usr/lib/gcc/arm-none-eabi/10.3.1/include",
+                "/usr/lib/gcc/arm-none-eabi/10.3.1/include-fixed",
+                "/usr/arm-none-eabi/include"
             ],
             "defines": [
                 "STM32F10X_MD",
-                "USE_STDPERIPH_DRIVER"
+                "USE_STDPERIPH_DRIVER",
+                "__ARM_ARCH_7M__=1"
             ],
             "compilerPath": "/usr/bin/arm-none-eabi-gcc",
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "intelliSenseMode": "linux-gcc-arm"
+            "intelliSenseMode": "linux-gcc-arm",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/User",
+                    "${workspaceFolder}/User/**",
+                    "${workspaceFolder}/Startup",
+                    "${workspaceFolder}/Libraries/CMSIS",
+                    "${workspaceFolder}/Libraries/CMSIS/**",
+                    "${workspaceFolder}/Libraries/STM32F10x_StdPeriph_Driver",
+                    "${workspaceFolder}/Libraries/STM32F10x_StdPeriph_Driver/**",
+                    "/usr/lib/gcc/arm-none-eabi/10.3.1/include",
+                    "/usr/arm-none-eabi/include"
+                ],
+                "limitSymbolsToIncludedHeaders": false,
+                "databaseFilename": "${workspaceFolder}/.vscode/vc.db"
+            }
         }
     ],
     "version": 4

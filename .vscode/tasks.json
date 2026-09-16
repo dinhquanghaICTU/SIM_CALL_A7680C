@@ -2,9 +2,16 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build Project",
+            "label": "STM32: Build + Flash + Minicom",
             "type": "shell",
-            "command": "make -j$(nproc)",
+            "command": "./run.sh all",
+            "group": "build",
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "STM32: Build Project",
+            "type": "shell",
+            "command": "./run.sh build",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -12,21 +19,27 @@
             "problemMatcher": ["$gcc"]
         },
         {
-            "label": "Clean Project",
+            "label": "STM32: Flash Firmware",
             "type": "shell",
-            "command": "make clean",
+            "command": "./run.sh flash",
             "problemMatcher": []
         },
         {
-            "label": "Flash Firmware (OpenOCD)",
+            "label": "STM32: Erase Flash Chip",
             "type": "shell",
-            "command": "make flash",
+            "command": "./run.sh erase",
             "problemMatcher": []
         },
         {
-            "label": "Flash Firmware (st-flash)",
+            "label": "STM32: Open Minicom Monitor",
             "type": "shell",
-            "command": "make flash_stlink",
+            "command": "./run.sh minicom",
+            "problemMatcher": []
+        },
+        {
+            "label": "STM32: Clean Build",
+            "type": "shell",
+            "command": "./run.sh clean",
             "problemMatcher": []
         }
     ]

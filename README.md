@@ -48,37 +48,47 @@ sudo apt install -y gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-
 
 ---
 
-## 3. Biên Dịch (Build)
+## 3. Quản Lý Tự Động Bằng Script `run.sh`
 
-- **Biên dịch toàn bộ dự án:**
-  ```bash
-  make -j$(nproc)
-  ```
-  File binary sau khi biên dịch nằm trong thư mục `build/`:
-  - `build/stm32f103_stdperiph.elf`
-  - `build/stm32f103_stdperiph.hex`
-  - `build/stm32f103_stdperiph.bin`
+Dự án có sẵn script [`run.sh`](file:///home/quanghaictu/Project_cuong/run.sh) tích hợp đầy đủ các chế độ:
 
-- **Dọn dẹp file build:**
+- **Mở Menu tương tác trực quan:**
   ```bash
-  make clean
+  ./run.sh
   ```
+  *(Hiển thị menu chọn nhanh: Build, Rebuild, Flash, Erase, Mở Minicom, hoặc Build+Flash+Minicom).*
+
+- **Chạy trực tiếp qua lệnh CLI:**
+  ```bash
+  # 1. Xóa sạch chip Flash (Mass Erase):
+  ./run.sh erase
+
+  # 2. Biên dịch firmware:
+  ./run.sh build
+
+  # 3. Nạp firmware xuống chip:
+  ./run.sh flash
+
+  # 4. Mở Minicom Serial Monitor (tự nhận diện cổng USB, baud 115200):
+  ./run.sh minicom
+  # Hoặc chỉ định cổng & baudrate khác:
+  ./run.sh minicom /dev/ttyUSB0 9600
+
+  # 5. Kết hợp: Build + Flash + Mở Minicom luôn:
+  ./run.sh all
+  ```
+
+> [!TIP]
+> **Mẹo thoát khỏi Minicom:** Nhấn tổ hợp phím **Ctrl + A**, thả tay ra rồi nhấn phím **X**, chọn **Yes** để thoát.
 
 ---
 
-## 4. Nạp Firmware (Flash)
+## 4. Biên Dịch & Nạp Thủ Công Bằng Makefile
 
-Kết nối mạch STM32F103C8T6 (Blue Pill) với máy tính qua mạch nạp ST-Link V2 (SWDIO, SWCLK, GND, 3V3):
-
-- **Cách 1: Nạp qua OpenOCD (Khuyến nghị):**
-  ```bash
-  make flash
-  ```
-
-- **Cách 2: Nạp qua `st-flash`:**
-  ```bash
-  make flash_stlink
-  ```
+- **Biên dịch:** `make -j$(nproc)`
+- **Xóa Flash:** `make erase`
+- **Nạp code:** `make flash` (OpenOCD) hoặc `make flash_stlink` (st-flash)
+- **Dọn dẹp build:** `make clean`
 
 ---
 

@@ -1,0 +1,11 @@
+{
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/compile_commands.json",
+    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.errorSquiggles": "enabled",
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}",
+        "--background-index",
+        "--completion-style=detailed",
+        "--header-insertion=never"
+    ]
+}

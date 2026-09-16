@@ -1027,10 +1027,10 @@ static void SetSysClockTo72(void)
     /* HCLK = SYSCLK */
     RCC->CFGR |= (uint32_t)RCC_CFGR_HPRE_DIV1;
       
-    /* PCLK2 = HCLK */
+    /* PCLK2 = HCLK = 72MHz */
     RCC->CFGR |= (uint32_t)RCC_CFGR_PPRE2_DIV1;
     
-    /* PCLK1 = HCLK */
+    /* PCLK1 = HCLK / 2 = 36MHz */
     RCC->CFGR |= (uint32_t)RCC_CFGR_PPRE1_DIV2;
 
 #ifdef STM32F10X_CL
