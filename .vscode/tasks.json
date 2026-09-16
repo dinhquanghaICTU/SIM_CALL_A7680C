@@ -1,0 +1,33 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Project",
+            "type": "shell",
+            "command": "make -j$(nproc)",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "Clean Project",
+            "type": "shell",
+            "command": "make clean",
+            "problemMatcher": []
+        },
+        {
+            "label": "Flash Firmware (OpenOCD)",
+            "type": "shell",
+            "command": "make flash",
+            "problemMatcher": []
+        },
+        {
+            "label": "Flash Firmware (st-flash)",
+            "type": "shell",
+            "command": "make flash_stlink",
+            "problemMatcher": []
+        }
+    ]
+}

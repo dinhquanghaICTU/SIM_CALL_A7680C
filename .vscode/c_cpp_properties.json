@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "STM32F103 StdPeriph",
+            "includePath": [
+                "${workspaceFolder}/User",
+                "${workspaceFolder}/Startup",
+                "${workspaceFolder}/Libraries/CMSIS/Include",
+                "${workspaceFolder}/Libraries/CMSIS/Device/ST/STM32F10x/Include",
+                "${workspaceFolder}/Libraries/STM32F10x_StdPeriph_Driver/inc"
+            ],
+            "defines": [
+                "STM32F10X_MD",
+                "USE_STDPERIPH_DRIVER"
+            ],
+            "compilerPath": "/usr/bin/arm-none-eabi-gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-arm"
+        }
+    ],
+    "version": 4
+}
