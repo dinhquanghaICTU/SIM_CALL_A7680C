@@ -14,18 +14,16 @@ void uart_debug_init(uint32_t baudrate) {
 
   ringbuff_init(&s_debug_rb, s_debug_rx_buf, sizeof(s_debug_rx_buf));
 
-  RCC_APB2PeriphClockCmd(DEBUG_UART_GPIO_CLK | DEBUG_UART_CLK | RCC_APB2Periph_AFIO, ENABLE);
+  RCC_APB2PeriphClockCmd(
+      DEBUG_UART_GPIO_CLK | DEBUG_UART_CLK | RCC_APB2Periph_AFIO, ENABLE);
 
-  /* Dam bao USART1 dung PA9 va PA10 */
   GPIO_PinRemapConfig(GPIO_Remap_USART1, DISABLE);
 
-  /* PA9 = TX */
   GPIO_InitStructure.GPIO_Pin = DEBUG_UART_TX_PIN;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_Init(DEBUG_UART_GPIO_PORT, &GPIO_InitStructure);
 
-  /* PA10 = RX */
   GPIO_InitStructure.GPIO_Pin = DEBUG_UART_RX_PIN;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
   GPIO_Init(DEBUG_UART_GPIO_PORT, &GPIO_InitStructure);
@@ -52,7 +50,8 @@ void uart_debug_init(uint32_t baudrate) {
 
 void uart_debug_send_char(char c) {
   uint32_t timeout = 100000;
-  while ((USART_GetFlagStatus(DEBUG_UART, USART_FLAG_TXE) == RESET) && --timeout)
+  while ((USART_GetFlagStatus(DEBUG_UART, USART_FLAG_TXE) == RESET) &&
+         --timeout)
     ;
   USART_SendData(DEBUG_UART, (uint16_t)c);
   timeout = 100000;
@@ -125,13 +124,11 @@ void uart_sim_init(uint32_t baudrate) {
   RCC_APB2PeriphClockCmd(SIM_UART_GPIO_CLK, ENABLE);
   RCC_APB1PeriphClockCmd(SIM_UART_CLK, ENABLE);
 
-  /* PA2 = TX */
   GPIO_InitStructure.GPIO_Pin = SIM_UART_TX_PIN;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_Init(SIM_UART_GPIO_PORT, &GPIO_InitStructure);
 
-  /* PA3 = RX (Nguong 1.83V bat song SIM A7680C cuc tot) */
   GPIO_InitStructure.GPIO_Pin = SIM_UART_RX_PIN;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
   GPIO_Init(SIM_UART_GPIO_PORT, &GPIO_InitStructure);
