@@ -1,5 +1,5 @@
-build/User/src/application/app.o: User/src/application/app.c \
- User/inc/application/app.h User/inc/hardware/Flame_Sensor/flame_sensor.h \
+build/User/src/hardware/GAS/gas.o: User/src/hardware/GAS/gas.c \
+ User/inc/hardware/GAS/gas.h \
  Libraries/CMSIS/Device/ST/STM32F10x/Include/stm32f10x.h \
  Libraries/CMSIS/Include/core_cm3.h \
  Libraries/CMSIS/Include/core_cmInstr.h \
@@ -25,13 +25,8 @@ build/User/src/application/app.o: User/src/application/app.c \
  Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_tim.h \
  Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_usart.h \
  Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_wwdg.h \
- Libraries/STM32F10x_StdPeriph_Driver/inc/misc.h \
- User/inc/hardware/GAS/gas.h User/inc/component/delay.h \
- User/inc/component/uart.h User/inc/third_party/ringbuff/ringbuff.h \
- User/inc/third_party/jsmn/jsmn.h User/inc/hardware/led/led.h \
- User/src/config.h User/inc/hardware/ring/ring.h
-User/inc/application/app.h:
-User/inc/hardware/Flame_Sensor/flame_sensor.h:
+ Libraries/STM32F10x_StdPeriph_Driver/inc/misc.h
+User/inc/hardware/GAS/gas.h:
 Libraries/CMSIS/Device/ST/STM32F10x/Include/stm32f10x.h:
 Libraries/CMSIS/Include/core_cm3.h:
 Libraries/CMSIS/Include/core_cmInstr.h:
@@ -58,11 +53,3 @@ Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_tim.h:
 Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_usart.h:
 Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_wwdg.h:
 Libraries/STM32F10x_StdPeriph_Driver/inc/misc.h:
-User/inc/hardware/GAS/gas.h:
-User/inc/component/delay.h:
-User/inc/component/uart.h:
-User/inc/third_party/ringbuff/ringbuff.h:
-User/inc/third_party/jsmn/jsmn.h:
-User/inc/hardware/led/led.h:
-User/src/config.h:
-User/inc/hardware/ring/ring.h:

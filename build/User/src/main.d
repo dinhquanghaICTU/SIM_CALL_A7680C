@@ -32,11 +32,11 @@ build/User/src/main.o: User/src/main.c \
  User/inc/third_party/freeRTOS/portable.h \
  User/inc/third_party/freeRTOS/deprecated_definitions.h \
  User/inc/third_party/freeRTOS/portmacro.h \
- User/inc/third_party/freeRTOS/mpu_wrappers.h User/inc/application/app.h \
- User/inc/component/delay.h User/inc/component/uart.h \
- User/inc/third_party/ringbuff/ringbuff.h User/inc/hardware/led/led.h \
- User/src/config.h User/inc/hardware/ring/ring.h \
- User/inc/third_party/freeRTOS/task.h \
+ User/inc/third_party/freeRTOS/mpu_wrappers.h User/inc/hardware/GAS/gas.h \
+ User/inc/application/app.h User/inc/component/delay.h \
+ User/inc/component/uart.h User/inc/third_party/ringbuff/ringbuff.h \
+ User/inc/hardware/led/led.h User/src/config.h \
+ User/inc/hardware/ring/ring.h User/inc/third_party/freeRTOS/task.h \
  User/inc/third_party/freeRTOS/list.h
 User/inc/hardware/Flame_Sensor/flame_sensor.h:
 Libraries/CMSIS/Device/ST/STM32F10x/Include/stm32f10x.h:
@@ -72,6 +72,7 @@ User/inc/third_party/freeRTOS/portable.h:
 User/inc/third_party/freeRTOS/deprecated_definitions.h:
 User/inc/third_party/freeRTOS/portmacro.h:
 User/inc/third_party/freeRTOS/mpu_wrappers.h:
+User/inc/hardware/GAS/gas.h:
 User/inc/application/app.h:
 User/inc/component/delay.h:
 User/inc/component/uart.h:

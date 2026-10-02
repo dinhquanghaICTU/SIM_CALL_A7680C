@@ -16,6 +16,7 @@ typedef struct {
   state_t next_state;
 
   bool fire_detected;
+  bool gas_detected;
   bool led_status;
   bool buzzer_status;
 
@@ -25,6 +26,7 @@ typedef struct {
   uint32_t report_tick;
   uint32_t alert_pattern_tick;
   uint32_t flame_lost_tick;
+  uint32_t hazard_lost_tick;
   uint32_t sensor_safe_tick;
 
   uint32_t led_auto_off_tick;

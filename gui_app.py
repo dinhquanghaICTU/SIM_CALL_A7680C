@@ -489,13 +489,17 @@ class FireAlarmDashboard(QMainWindow):
         self.reader_thread = None
         self.alarm_flashing = False
         self.flash_state = False
+        self.current_fire = False
+        self.current_gas = False
+        self.current_gas_raw = 0
+        self.current_gas_thresh = 1700
         self.prev_verify_time_idx = 1
         self.prev_alarm_hold_idx = 2
         self.prev_duration_idx = 2
 
         self.init_ui()
 
-        # Timer chớp đèn cảnh báo khi có lửa
+        # Timer chớp đèn cảnh báo khi có lửa hoặc rò rỉ gas
         self.flash_timer = QTimer(self)
         self.flash_timer.timeout.connect(self.toggle_alarm_flash)
 
@@ -503,8 +507,8 @@ class FireAlarmDashboard(QMainWindow):
         self.refresh_ports()
 
     def init_ui(self):
-        self.setWindowTitle("STM32F103 IoT Fire Alarm & Peripheral Controller")
-        self.resize(1000, 720)
+        self.setWindowTitle("STM32F103 IoT Fire & Gas Alarm System")
+        self.resize(1050, 720)
         self.setStyleSheet(DARK_STYLE)
 
         central_widget = QWidget()
@@ -516,9 +520,9 @@ class FireAlarmDashboard(QMainWindow):
         # 1. HEADER BAR
         header_layout = QHBoxLayout()
         title_box = QVBoxLayout()
-        lbl_title = QLabel("🔥 HỆ THỐNG CẢNH BÁO CHÁY THÔNG MINH")
+        lbl_title = QLabel("🔥 HỆ THỐNG CẢNH BÁO CHÁY & RÒ RỈ KHÍ GAS")
         lbl_title.setStyleSheet("font-size: 20px; font-weight: 800; color: #F8FAFC; letter-spacing: 0.5px;")
-        lbl_sub = QLabel("STM32F103C8T6 • FreeRTOS Kernel • JSON UART Controller")
+        lbl_sub = QLabel("STM32F103C8T6 • FreeRTOS Kernel • Flame (PA1) & Gas MQ (PA0) • JSON UART")
         lbl_sub.setStyleSheet("font-size: 12px; color: #94A3B8; font-weight: 500;")
         title_box.addWidget(lbl_title)
         title_box.addWidget(lbl_sub)
@@ -565,35 +569,41 @@ class FireAlarmDashboard(QMainWindow):
         conn_layout.addStretch()
         main_layout.addWidget(conn_group)
 
-        # 3. KHỐI TRẠNG THÁI TRỰC QUAN (4 CARDS GRID)
+        # 3. KHỐI TRẠNG THÁI TRỰC QUAN (5 CARDS GRID)
         status_group = QGroupBox("📊 Giám Sát Thời Gian Thực")
         grid_status = QGridLayout(status_group)
         grid_status.setContentsMargins(16, 20, 16, 16)
-        grid_status.setSpacing(16)
+        grid_status.setSpacing(12)
 
         # Card 1: Cảm biến lửa
         self.card_fire, self.lbl_fire_icon, self.lbl_fire_text = self.create_status_card(
-            "CẢM BIẾN LỬA (FLAME)", "🛡️", "AN TOÀN", "#10B981"
+            "CẢM BIẾN LỬA (PA1)", "🛡️", "AN TOÀN", "#10B981"
         )
         grid_status.addWidget(self.card_fire, 0, 0)
 
-        # Card 2: State Machine
+        # Card 2: Cảm biến Gas (MQ-2 / MQ-5 qua chân Analog A0)
+        self.card_gas, self.lbl_gas_icon, self.lbl_gas_text = self.create_status_card(
+            "CẢM BIẾN GAS (A0-PA0)", "💨", "AN TOÀN", "#10B981"
+        )
+        grid_status.addWidget(self.card_gas, 0, 1)
+
+        # Card 3: State Machine
         self.card_state, self.lbl_state_icon, self.lbl_state_text = self.create_status_card(
             "TRẠNG THÁI HỆ THỐNG", "⚙️", "IDLE (BÌNH THƯỜNG)", "#38BDF8"
         )
-        grid_status.addWidget(self.card_state, 0, 1)
+        grid_status.addWidget(self.card_state, 0, 2)
 
-        # Card 3: Đèn LED
+        # Card 4: Đèn LED
         self.card_led, self.lbl_led_icon, self.lbl_led_text = self.create_status_card(
             "ĐÈN BÁO (LED PB6)", "💡", "ĐANG TẮT", "#64748B"
         )
-        grid_status.addWidget(self.card_led, 0, 2)
+        grid_status.addWidget(self.card_led, 0, 3)
 
-        # Card 4: Còi báo động
+        # Card 5: Còi báo động
         self.card_buzz, self.lbl_buzz_icon, self.lbl_buzz_text = self.create_status_card(
-            "CÒI BÁO ĐỘNG (BUZZER)", "🔔", "IM LẶNG", "#64748B"
+            "CÒI BÁO ĐỘNG (PB10)", "🔔", "IM LẶNG", "#64748B"
         )
-        grid_status.addWidget(self.card_buzz, 0, 3)
+        grid_status.addWidget(self.card_buzz, 0, 4)
 
         main_layout.addWidget(status_group)
 
@@ -673,6 +683,25 @@ class FireAlarmDashboard(QMainWindow):
         self.cb_verify_time.currentIndexChanged.connect(self.handle_verify_time_changed)
         verify_cfg_layout.addWidget(self.cb_verify_time)
         ctrl_layout.addLayout(verify_cfg_layout)
+
+        # Cấu hình ngưỡng cảm biến Gas ADC
+        gas_cfg_layout = QHBoxLayout()
+        gas_cfg_layout.addWidget(QLabel("💨 Ngưỡng Gas ADC:"))
+        self.cb_gas_thresh = QComboBox()
+        self.cb_gas_thresh.addItem("1300 (Rất nhạy)", 1300)
+        self.cb_gas_thresh.addItem("1500 (Nhạy cao)", 1500)
+        self.cb_gas_thresh.addItem("1700 (Chuẩn 1700 theo yêu cầu)", 1700)
+        self.cb_gas_thresh.addItem("1900 (Mức nền phòng)", 1900)
+        self.cb_gas_thresh.addItem("2100 (Cao)", 2100)
+        self.cb_gas_thresh.addItem("2300 (Rất cao)", 2300)
+        self.cb_gas_thresh.setCurrentIndex(2) # Mặc định 1700
+        self.cb_gas_thresh.currentIndexChanged.connect(self.handle_gas_thresh_changed)
+        gas_cfg_layout.addWidget(self.cb_gas_thresh)
+        self.btn_calib_gas = QPushButton("🎯 Auto Calib")
+        self.btn_calib_gas.setToolTip("Tự động đặt ngưỡng = Mức nền hiện tại + 450")
+        self.btn_calib_gas.clicked.connect(self.handle_auto_calib_gas)
+        gas_cfg_layout.addWidget(self.btn_calib_gas)
+        ctrl_layout.addLayout(gas_cfg_layout)
 
         # Hàng nút Hệ Thống
         sys_btn_layout = QHBoxLayout()
@@ -937,6 +966,16 @@ class FireAlarmDashboard(QMainWindow):
             self.cb_verify_time.setCurrentIndex(self.prev_verify_time_idx)
             self.cb_verify_time.blockSignals(False)
 
+    def handle_gas_thresh_changed(self):
+        new_idx = self.cb_gas_thresh.currentIndex()
+        th_val = self.cb_gas_thresh.itemData(new_idx)
+        self.send_json({"gas_thresh": th_val})
+        self.log_message(f"💨 Đã đặt ngưỡng phát hiện gas: {th_val}", "#38BDF8")
+
+    def handle_auto_calib_gas(self):
+        self.send_json({"calibrate_gas": 1})
+        self.log_message("🎯 Đã gửi yêu cầu: Tự động chuẩn hóa mức nền Gas theo môi trường.", "#10B981")
+
     def handle_auto_mode(self):
         dlg = ModernConfirmDialog(
             parent=self,
@@ -1013,26 +1052,71 @@ class FireAlarmDashboard(QMainWindow):
                         padding: 12px;
                     }
                 """)
-                self.log_message(f"⚠️ [CHÓI SÁNG] {data.get('msg', 'Cảm biến đang bị chói hồng ngoại! Vặn nhỏ biến trở cho LED D0 tắt.')}", "#F59E0B")
+                self.log_message(f"⚠️ [CHÓI SÁNG] {data.get('msg', 'Cảm biến lửa bị chói hồng ngoại! Vặn nhỏ biến trở cho LED D0 tắt.')}", "#F59E0B")
+            elif evt == "WARN_CALIB_GAS":
+                self.lbl_gas_icon.setText("⏳")
+                self.lbl_gas_text.setText("SẤY / NHẠY (PA0=0)")
+                self.lbl_gas_text.setStyleSheet("font-size: 13px; font-weight: 800; color: #F59E0B;")
+                self.card_gas.setStyleSheet("""
+                    QFrame {
+                        background-color: #451A03;
+                        border: 2px solid #F59E0B;
+                        border-radius: 12px;
+                        padding: 12px;
+                    }
+                """)
+                self.log_message(f"⚠️ [CẢM BIẾN GAS] {data.get('msg', 'Cảm biến Gas đang sấy nóng hoặc biến trở quá nhạy! Vặn biến trở trên MQ cho LED D0 tắt.')}", "#F59E0B")
             elif evt == "SYSTEM_ARMED":
-                self.log_message(f"🛡️ [SẴN SÀNG] {data.get('msg', 'Mức nền an toàn đã xác lập. Hệ thống bắt đầu giám sát!')}", "#10B981")
+                self.log_message(f"🛡️ [SẴN SÀNG] {data.get('msg', 'Mức nền an toàn đã xác lập. Hệ thống bắt đầu giám sát Lửa & Khí Gas!')}", "#10B981")
 
-        # 1. Trạng thái lửa
+        # 1. Trạng thái cảm biến Lửa (Flame PA1)
         if "fire" in data:
-            fire = bool(data["fire"])
-            raw_str = f" (PA1={data['raw']})" if "raw" in data else ""
-            if fire:
-                self.start_alarm_flash()
-            else:
-                self.stop_alarm_flash(raw_str)
+            self.current_fire = bool(data["fire"])
+            raw_fire = data.get("raw", 1)
+            if not self.current_fire and not self.alarm_flashing:
+                self.card_fire.setStyleSheet("""
+                    QFrame {
+                        background-color: #0F172A;
+                        border: 2px solid #10B981;
+                        border-radius: 12px;
+                        padding: 12px;
+                    }
+                """)
+                self.lbl_fire_icon.setText("🛡️")
+                self.lbl_fire_text.setText(f"AN TOÀN (PA1={raw_fire})")
+                self.lbl_fire_text.setStyleSheet("font-size: 14px; font-weight: 800; color: #10B981;")
 
-        # 2. Trạng thái State Machine
+        # 2. Trạng thái cảm biến Khí Gas (MQ-2 / MQ-5 qua Analog PA0)
+        if "gas" in data:
+            self.current_gas = bool(data["gas"])
+            self.current_gas_raw = data.get("gas_raw", 0)
+            self.current_gas_thresh = data.get("gas_thresh", 1300)
+            if not self.current_gas and not self.alarm_flashing:
+                self.card_gas.setStyleSheet("""
+                    QFrame {
+                        background-color: #0F172A;
+                        border: 2px solid #10B981;
+                        border-radius: 12px;
+                        padding: 12px;
+                    }
+                """)
+                self.lbl_gas_icon.setText("💨")
+                self.lbl_gas_text.setText(f"AN TOÀN ({self.current_gas_raw}/{self.current_gas_thresh})")
+                self.lbl_gas_text.setStyleSheet("font-size: 13px; font-weight: 800; color: #10B981;")
+
+        # 3. Kích hoạt hoặc ngắt chớp đèn cảnh báo
+        if self.current_fire or self.current_gas:
+            self.start_alarm_flash()
+        else:
+            self.stop_alarm_flash()
+
+        # 4. Trạng thái State Machine
         if "state" in data:
             st = str(data["state"]).upper()
             color = "#38BDF8"
             if st == "ALARM":
                 color = "#EF4444"
-                icon = "🔥"
+                icon = "🔥" if self.current_fire else "☣️"
             elif st == "VERIFYING":
                 color = "#F59E0B"
                 icon = "⏳"
@@ -1055,7 +1139,7 @@ class FireAlarmDashboard(QMainWindow):
                 }}
             """)
 
-        # 3. Trạng thái LED
+        # 5. Trạng thái LED (PB6)
         if "led" in data:
             led = bool(data["led"])
             color = "#FACC15" if led else "#64748B"
@@ -1071,7 +1155,7 @@ class FireAlarmDashboard(QMainWindow):
                 }}
             """)
 
-        # 4. Trạng thái Còi
+        # 6. Trạng thái Còi (PB10)
         if "buzzer" in data:
             buzz = bool(data["buzzer"])
             color = "#EF4444" if buzz else "#64748B"
@@ -1092,35 +1176,67 @@ class FireAlarmDashboard(QMainWindow):
             self.alarm_flashing = True
             self.flash_timer.start(250)
 
-    def stop_alarm_flash(self, extra=""):
+    def stop_alarm_flash(self):
         self.alarm_flashing = False
         self.flash_timer.stop()
-        self.card_fire.setStyleSheet("""
-            QFrame {
-                background-color: #0F172A;
-                border: 2px solid #10B981;
-                border-radius: 12px;
-                padding: 12px;
-            }
-        """)
-        self.lbl_fire_icon.setText("🛡️")
-        self.lbl_fire_text.setText(f"AN TOÀN{extra}")
-        self.lbl_fire_text.setStyleSheet("font-size: 14px; font-weight: 800; color: #10B981;")
+
+        if not self.current_fire:
+            self.card_fire.setStyleSheet("""
+                QFrame {
+                    background-color: #0F172A;
+                    border: 2px solid #10B981;
+                    border-radius: 12px;
+                    padding: 12px;
+                }
+            """)
+            self.lbl_fire_icon.setText("🛡️")
+            self.lbl_fire_text.setText("AN TOÀN")
+            self.lbl_fire_text.setStyleSheet("font-size: 14px; font-weight: 800; color: #10B981;")
+
+        if not self.current_gas:
+            self.card_gas.setStyleSheet("""
+                QFrame {
+                    background-color: #0F172A;
+                    border: 2px solid #10B981;
+                    border-radius: 12px;
+                    padding: 12px;
+                }
+            """)
+            self.lbl_gas_icon.setText("💨")
+            self.lbl_gas_text.setText(f"AN TOÀN ({self.current_gas_raw}/{self.current_gas_thresh})")
+            self.lbl_gas_text.setStyleSheet("font-size: 13px; font-weight: 800; color: #10B981;")
 
     def toggle_alarm_flash(self):
         self.flash_state = not self.flash_state
         bg = "#7F1D1D" if self.flash_state else "#0F172A"
-        self.card_fire.setStyleSheet(f"""
-            QFrame {{
-                background-color: {bg};
-                border: 3px solid #EF4444;
-                border-radius: 12px;
-                padding: 12px;
-            }}
-        """)
-        self.lbl_fire_icon.setText("🔥" if self.flash_state else "⚠️")
-        self.lbl_fire_text.setText("CẢNH BÁO CHÁY!")
-        self.lbl_fire_text.setStyleSheet("font-size: 14px; font-weight: 800; color: #EF4444;")
+
+        # Chớp thẻ Lửa nếu phát hiện lửa
+        if self.current_fire:
+            self.card_fire.setStyleSheet(f"""
+                QFrame {{
+                    background-color: {bg};
+                    border: 3px solid #EF4444;
+                    border-radius: 12px;
+                    padding: 12px;
+                }}
+            """)
+            self.lbl_fire_icon.setText("🔥" if self.flash_state else "⚠️")
+            self.lbl_fire_text.setText("CẢNH BÁO CHÁY!")
+            self.lbl_fire_text.setStyleSheet("font-size: 14px; font-weight: 800; color: #EF4444;")
+
+        # Chớp thẻ Gas nếu phát hiện rò rỉ gas
+        if self.current_gas:
+            self.card_gas.setStyleSheet(f"""
+                QFrame {{
+                    background-color: {bg};
+                    border: 3px solid #EF4444;
+                    border-radius: 12px;
+                    padding: 12px;
+                }}
+            """)
+            self.lbl_gas_icon.setText("☣️" if self.flash_state else "💨")
+            self.lbl_gas_text.setText(f"RÒ RỈ GAS! ({self.current_gas_raw})")
+            self.lbl_gas_text.setStyleSheet("font-size: 13px; font-weight: 800; color: #EF4444;")
 
     def log_message(self, msg, color_hex="#A7F3D0"):
         ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]

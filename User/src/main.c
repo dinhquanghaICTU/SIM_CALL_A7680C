@@ -1,5 +1,6 @@
 #include "Flame_Sensor/flame_sensor.h"
 #include "FreeRTOS.h"
+#include "GAS/gas.h"
 #include "application/app.h"
 #include "component/delay.h"
 #include "component/uart.h"
@@ -24,8 +25,9 @@ int main(void) {
   led_init();
   ring_init();
   flame_sensor_init();
+  gas_sensor_init();
 
-  xTaskCreate(vAppTask, "AppTask", 256, NULL, 2, NULL);
+  xTaskCreate(vAppTask, "AppTask", 512, NULL, 2, NULL);
 
   vTaskStartScheduler();
 

@@ -1,5 +1,6 @@
 #include "application/app.h"
 #include "Flame_Sensor/flame_sensor.h"
+#include "GAS/gas.h"
 #include "component/delay.h"
 #include "component/uart.h"
 #include "jsmn/jsmn.h"
@@ -15,6 +16,7 @@
 static m_state_t g_app;
 static char s_json_rx_buf[JSON_RX_MAX_LEN];
 static uint16_t s_json_rx_idx = 0;
+static char s_json_tx_buf[256];
 
 static bool jsoneq(const char *json, jsmntok_t *tok, const char *s) {
   if (tok->type == JSMN_STRING && (int)strlen(s) == tok->end - tok->start &&
@@ -35,7 +37,6 @@ static int parse_int(const char *json, jsmntok_t *tok) {
 }
 
 void app_send_status_json(void) {
-  char json_buf[160];
   const char *state_names[] = {"IDLE", "VERIFYING", "ALARM", "MANUAL"};
   const char *st_str = "IDLE";
 
@@ -43,16 +44,20 @@ void app_send_status_json(void) {
     st_str = state_names[g_app.current_state];
   }
 
-  snprintf(json_buf, sizeof(json_buf),
-           "{\"fire\":%d,\"raw\":%d,\"led\":%d,\"buzzer\":%d,\"state\":\"%s\","
+  uint16_t gas_adc = gas_sensor_read_raw();
+
+  snprintf(s_json_tx_buf, sizeof(s_json_tx_buf),
+           "{\"fire\":%d,\"gas\":%d,\"raw\":%d,\"gas_raw\":%u,\"gas_thresh\":%"
+           "u,\"led\":%d,\"buzzer\":%d,\"state\":\"%s\","
            "\"alarm_hold\":%lu,\"blink_speed\":%lu,\"verify_time\":%lu}\r\n",
-           g_app.fire_detected ? 1 : 0, flame_sensor_read_raw(),
+           g_app.fire_detected ? 1 : 0, g_app.gas_detected ? 1 : 0,
+           flame_sensor_read_raw(), gas_adc, gas_sensor_get_threshold(),
            g_app.led_status ? 1 : 0, g_app.buzzer_status ? 1 : 0, st_str,
            (unsigned long)g_app.alarm_hold_ms,
            (unsigned long)g_app.blink_speed_ms,
            (unsigned long)g_app.verify_time_ms);
 
-  uart_debug_send_string(json_buf);
+  uart_debug_send_string(s_json_tx_buf);
 }
 
 static void app_parse_json_command(const char *json_str) {
@@ -143,6 +148,23 @@ static void app_parse_json_command(const char *json_str) {
       i++;
     }
 
+    else if (jsoneq(json_str, &tokens[i], "gas_thresh") ||
+             jsoneq(json_str, &tokens[i], "gas_threshold")) {
+      int th = parse_int(json_str, &tokens[i + 1]);
+      if (th >= 100 && th <= 4000) {
+        gas_sensor_set_threshold((uint16_t)th);
+      }
+      state_changed = true;
+      i++;
+    }
+
+    else if (jsoneq(json_str, &tokens[i], "calibrate_gas") ||
+             jsoneq(json_str, &tokens[i], "gas_calib")) {
+      gas_sensor_auto_calibrate();
+      state_changed = true;
+      i++;
+    }
+
     else if (jsoneq(json_str, &tokens[i], "mode") || strstr(json_str, "mode")) {
       if (strstr(json_str, "auto")) {
         g_app.led_auto_off_tick = 0;
@@ -156,6 +178,7 @@ static void app_parse_json_command(const char *json_str) {
         ring_off();
         g_app.state_tick = now;
         g_app.flame_lost_tick = now;
+        g_app.hazard_lost_tick = now;
         state_changed = true;
       }
       i++;
@@ -197,14 +220,15 @@ void app_init(void) {
   led_init();
   ring_init();
   flame_sensor_init();
+  gas_sensor_init();
 
   led_off();
   ring_off();
 
   g_app.alarm_hold_ms = 3000;
   g_app.blink_speed_ms = 150;
-  g_app.verify_time_ms = 1000;
-  g_app.sensor_calibrated = false;
+  g_app.verify_time_ms = 300;
+  g_app.sensor_calibrated = true;
   g_app.sensor_safe_tick = 0;
 
   uint32_t now = get_tick_ms();
@@ -212,9 +236,10 @@ void app_init(void) {
   g_app.report_tick = now;
   g_app.alert_pattern_tick = now;
   g_app.flame_lost_tick = now;
+  g_app.hazard_lost_tick = now;
 
   uart_debug_send_string(
-      "\r\n{\"event\":\"SYSTEM_INIT\",\"msg\":\"App Started\"}\r\n");
+      "\r\n{\"event\":\"SYSTEM_INIT\",\"msg\":\"App Started - Armed\"}\r\n");
   app_send_status_json();
 }
 
@@ -223,47 +248,11 @@ void app_process(void) {
 
   app_check_uart_rx();
 
-  // Đọc mức cảm biến thô (Active LOW: 0 = Lửa/Chói sáng, 1 = Bình thường)
   g_app.fire_detected = flame_sensor_is_detected();
+  uint16_t gas_raw = gas_sensor_read_raw();
+  g_app.gas_detected = (gas_raw >= gas_sensor_get_threshold());
+  bool hazard_detected = (g_app.fire_detected || g_app.gas_detected);
 
-  // 1. KIỂM TRA MỨC NỀN AN TOÀN KHI KHỞI ĐỘNG (Ngăn còi hú ngay khi vừa nạp
-  // code/bật nguồn)
-  if (!g_app.sensor_calibrated) {
-    led_off();
-    ring_off();
-    g_app.led_status = false;
-    g_app.buzzer_status = false;
-    g_app.current_state = STATE_IDLE;
-    g_app.next_state = STATE_IDLE;
-    g_app.state_tick = now;
-    g_app.flame_lost_tick = now;
-
-    if (!g_app.fire_detected) {
-      // Cảm biến đọc được mức an toàn (raw == 1)
-      if (g_app.sensor_safe_tick == 0) {
-        g_app.sensor_safe_tick = now;
-      } else if ((now - g_app.sensor_safe_tick) >= 800) {
-        g_app.sensor_calibrated = true;
-        uart_debug_send_string("\r\n{\"event\":\"SYSTEM_ARMED\",\"msg\":"
-                               "\"Sensor OK - System Armed\"}\r\n");
-        app_send_status_json();
-      }
-    } else {
-      // Cảm biến đang bị chói sáng hoặc vặn biến trở quá nhạy (raw == 0)
-      g_app.sensor_safe_tick = 0;
-      static uint32_t s_last_warn_tick = 0;
-      if ((now - s_last_warn_tick) >= 2000) {
-        s_last_warn_tick = now;
-        uart_debug_send_string(
-            "{\"event\":\"WARN_CALIB\",\"raw\":0,\"msg\":\"Ambient IR high! "
-            "Adjust trimpot on sensor until D0 turns off.\"}\r\n");
-        app_send_status_json();
-      }
-    }
-    return;
-  }
-
-  // 2. CẬP NHẬT CHUYỂN TRẠNG THÁI (Nếu UART hoặc FSM yêu cầu đổi trạng thái)
   if (g_app.current_state != g_app.next_state) {
     g_app.current_state = g_app.next_state;
     g_app.state_tick = now;
@@ -289,7 +278,6 @@ void app_process(void) {
     }
   }
 
-  // 3. NẾU ĐANG Ở CHẾ ĐỘ THỦ CÔNG (STATE_MANUAL): Không can thiệp bởi cảm biến
   if (g_app.current_state == STATE_MANUAL) {
     if (g_app.led_auto_off_tick > 0 && now >= g_app.led_auto_off_tick) {
       g_app.led_auto_off_tick = 0;
@@ -310,7 +298,6 @@ void app_process(void) {
     return;
   }
 
-  // 4. XỬ LÝ HẸN GIỜ TỰ TẮT (LED / CÒI) TRONG CHẾ ĐỘ TỰ ĐỘNG
   if (g_app.led_auto_off_tick > 0 && now >= g_app.led_auto_off_tick) {
     g_app.led_auto_off_tick = 0;
     g_app.led_status = false;
@@ -325,9 +312,9 @@ void app_process(void) {
     app_send_status_json();
   }
 
-  // 5. MÁY TRẠNG THÁI BÁO CHÁY TỰ ĐỘNG (FSM)
-  if (g_app.fire_detected) {
+  if (hazard_detected) {
     g_app.flame_lost_tick = now;
+    g_app.hazard_lost_tick = now;
 
     if (g_app.current_state == STATE_IDLE) {
       g_app.next_state = STATE_VERIFYING;
@@ -338,18 +325,16 @@ void app_process(void) {
     }
   } else {
     if (g_app.current_state == STATE_VERIFYING) {
-      // Đang xác thực mà mất tín hiệu (chớp sáng, mở cửa thoáng qua) -> Quay về
-      // an toàn ngay
+
       g_app.next_state = STATE_IDLE;
     } else if (g_app.current_state == STATE_ALARM) {
-      // Khi đã dập lửa: Duy trì còi hú đủ thời gian alarm_hold_ms rồi mới tắt
-      if ((now - g_app.flame_lost_tick) >= g_app.alarm_hold_ms) {
+
+      if ((now - g_app.hazard_lost_tick) >= g_app.alarm_hold_ms) {
         g_app.next_state = STATE_IDLE;
       }
     }
   }
 
-  // Cập nhật chuyển trạng thái ngay nếu FSM vừa đổi sang ALARM hoặc IDLE
   if (g_app.current_state != g_app.next_state) {
     g_app.current_state = g_app.next_state;
     g_app.state_tick = now;
@@ -390,28 +375,16 @@ void app_process(void) {
 
   case STATE_ALARM:
 
-    // Tự động ngắt còi sau 6 giây (chống điếc tai khi bị kẹt ánh sáng bóng
-    // điện) Đèn LED vẫn tiếp tục nhấp nháy cảnh báo trực quan
-    {
-      bool allow_buzzer = ((now - g_app.state_tick) <= 6000);
-
-      if ((now - g_app.alert_pattern_tick) >= g_app.blink_speed_ms) {
-        g_app.alert_pattern_tick = now;
-        g_app.led_status = !g_app.led_status;
-        if (g_app.led_status) {
-          led_on();
-          if (allow_buzzer) {
-            g_app.buzzer_status = true;
-            ring_on();
-          } else {
-            g_app.buzzer_status = false;
-            ring_off();
-          }
-        } else {
-          led_off();
-          g_app.buzzer_status = false;
-          ring_off();
-        }
+    if ((now - g_app.alert_pattern_tick) >= g_app.blink_speed_ms) {
+      g_app.alert_pattern_tick = now;
+      g_app.led_status = !g_app.led_status;
+      g_app.buzzer_status = g_app.led_status;
+      if (g_app.led_status) {
+        led_on();
+        ring_on();
+      } else {
+        led_off();
+        ring_off();
       }
     }
     break;
