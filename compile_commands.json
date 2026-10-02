@@ -31,6 +31,11 @@
   },
   {
     "directory": "/home/quanghaictu/Project_cuong",
+    "command": "arm-none-eabi-gcc -c -mcpu=cortex-m3 -mthumb -DSTM32F10X_MD -DUSE_STDPERIPH_DRIVER -IUser -IUser -IUser/src -IUser/src/component -IUser/src/hardware -IUser/src/hardware/Flame_Sensor -IUser/src/hardware/led -IUser/src/hardware/ring -IUser/src/middle -IUser/src/application -IUser/src/third_party -IUser/src/third_party/ringbuff -IUser/src/third_party/jsmn -IUser/src/third_party/freeRTOS -IUser/inc -IUser/inc/component -IUser/inc/hardware -IUser/inc/hardware/Flame_Sensor -IUser/inc/hardware/led -IUser/inc/hardware/ring -IUser/inc/middle -IUser/inc/application -IUser/inc/third_party -IUser/inc/third_party/ringbuff -IUser/inc/third_party/jsmn -IUser/inc/third_party/freeRTOS -IStartup -ILibraries/CMSIS/Include -ILibraries/CMSIS/Device/ST/STM32F10x/Include -ILibraries/STM32F10x_StdPeriph_Driver/inc -Og -Wall -fdata-sections -ffunction-sections -g -gdwarf-2 -MMD -MP -MF\"build/User/src/application/app.d\" User/src/application/app.c -o build/User/src/application/app.o",
+    "file": "/home/quanghaictu/Project_cuong/User/src/application/app.c"
+  },
+  {
+    "directory": "/home/quanghaictu/Project_cuong",
     "command": "arm-none-eabi-gcc -c -mcpu=cortex-m3 -mthumb -DSTM32F10X_MD -DUSE_STDPERIPH_DRIVER -IUser -IUser -IUser/src -IUser/src/component -IUser/src/hardware -IUser/src/hardware/Flame_Sensor -IUser/src/hardware/led -IUser/src/hardware/ring -IUser/src/middle -IUser/src/application -IUser/src/third_party -IUser/src/third_party/ringbuff -IUser/src/third_party/jsmn -IUser/src/third_party/freeRTOS -IUser/inc -IUser/inc/component -IUser/inc/hardware -IUser/inc/hardware/Flame_Sensor -IUser/inc/hardware/led -IUser/inc/hardware/ring -IUser/inc/middle -IUser/inc/application -IUser/inc/third_party -IUser/inc/third_party/ringbuff -IUser/inc/third_party/jsmn -IUser/inc/third_party/freeRTOS -IStartup -ILibraries/CMSIS/Include -ILibraries/CMSIS/Device/ST/STM32F10x/Include -ILibraries/STM32F10x_StdPeriph_Driver/inc -Og -Wall -fdata-sections -ffunction-sections -g -gdwarf-2 -MMD -MP -MF\"build/User/src/main.d\" User/src/main.c -o build/User/src/main.o",
     "file": "/home/quanghaictu/Project_cuong/User/src/main.c"
   },

@@ -8,6 +8,8 @@
 #include "stm32f10x_it.h"
 #include "component/uart.h"
 
+
+
 /* Weak function for tick increment, can be overridden by user hardware timer */
 __attribute__((weak)) void tick_ms_increment(void) {}
 
@@ -35,11 +37,10 @@ void UsageFault_Handler(void) {
 
 void DebugMon_Handler(void) {}
 
-/* Note: SVC_Handler, PendSV_Handler và SysTick_Handler được quản lý trực tiếp bởi FreeRTOS (port.c) */
+/* Note: SVC_Handler, PendSV_Handler và SysTick_Handler được quản lý trực tiếp
+ * bởi FreeRTOS (port.c) */
 
-void vApplicationTickHook(void) {
-  tick_ms_increment();
-}
+void vApplicationTickHook(void) { tick_ms_increment(); }
 
 /**
  * @brief  Ngắt USART1 (Dùng cho DEBUG: PA9 - TX, PA10 - RX)

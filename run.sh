@@ -220,9 +220,10 @@ show_menu() {
         echo -e "  ${BOLD}7)${NC} ${BOLD}Build+Flash+Log${NC}   - Combo: Build + Nạp + Mở Minicom ngay"
         echo -e "  ${BOLD}8)${NC} Fix USB Permission - Cấp quyền vĩnh viễn cho ST-Link/UART"
         echo -e "  ${BOLD}9)${NC} Clean             - Xóa thư mục build"
+        echo -e "  ${BOLD}10)${NC} ${CYAN}Mở Dashboard GUI${NC}  - Giao diện đồ họa Python (Serial JSON)"
         echo -e "  ${BOLD}0)${NC} Thoát"
         echo -e "${CYAN}========================================================${NC}"
-        read -rp "Chọn chức năng [0-9]: " choice
+        read -rp "Chọn chức năng [0-10]: " choice
 
         case "$choice" in
             1)
@@ -264,6 +265,10 @@ show_menu() {
                 echo -e "${GREEN}Đã xóa thư mục build!${NC}"
                 read -rp "Nhấn [Enter] để tiếp tục..."
                 ;;
+            10)
+                python3 gui_app.py
+                read -rp "Nhấn [Enter] để tiếp tục..."
+                ;;
             0|q|Q)
                 echo "Tạm biệt!"
                 exit 0
@@ -300,6 +305,9 @@ case "$1" in
         ;;
     all|bfm)
         do_all "$2" "$3"
+        ;;
+    gui|dashboard)
+        python3 gui_app.py
         ;;
     fix|fix-usb)
         ./fix_usb_permission.sh
