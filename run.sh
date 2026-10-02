@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
-# ==============================================================================
-# Script điều khiển STM32F103: Build, Flash, Erase, Mở Minicom Serial Monitor
-# Dự án: Project_cuong (STM32F103C8T6 StdPeriph)
-# ==============================================================================
 
-# Màu hiển thị terminal
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 BOLD='\033[1m'
-NC='\033[0m' # No Color
+NC='\033[0m' 
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_DIR"
@@ -27,7 +23,6 @@ find_serial_port() {
     fi
 }
 
-# Hàm cập nhật compile_commands.json cho IDE IntelliSense & Clangd
 update_compile_commands() {
     python3 -c "
 import json, subprocess, os, shlex

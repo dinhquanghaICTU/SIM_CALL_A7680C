@@ -15,7 +15,7 @@ from datetime import datetime
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QGridLayout, QLabel, QPushButton, QComboBox, QTextEdit, QLineEdit,
-    QGroupBox, QFrame, QMessageBox, QGraphicsDropShadowEffect
+    QGroupBox, QFrame, QMessageBox, QGraphicsDropShadowEffect, QDialog
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer
 from PyQt5.QtGui import QFont, QColor, QIcon
@@ -184,6 +184,302 @@ class SerialReaderThread(QThread):
 
 
 # ==============================================================================
+# HỘP THOẠI CẢNH BÁO / THÔNG BÁO HIỆN ĐẠI (ALERT MODAL)
+# ==============================================================================
+class ModernAlertModal(QDialog):
+    """Hộp thoại popup thông báo / cảnh báo chuẩn Dark Mode Glassmorphism tuyệt đẹp."""
+    def __init__(self, parent=None, title="THÔNG BÁO", message="", icon="⚠️",
+                 alert_type="warning", btn_text="✓ Đã Hiểu"):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setFixedWidth(420)
+        self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+
+        if alert_type in ("danger", "error"):
+            accent_color = "#EF4444"
+            btn_bg = "#DC2626"
+            btn_hover = "#EF4444"
+        elif alert_type == "success":
+            accent_color = "#10B981"
+            btn_bg = "#059669"
+            btn_hover = "#10B981"
+        elif alert_type == "info":
+            accent_color = "#38BDF8"
+            btn_bg = "#0284C7"
+            btn_hover = "#0EA5E9"
+        else: # warning
+            accent_color = "#F59E0B"
+            btn_bg = "#D97706"
+            btn_hover = "#F59E0B"
+
+        outer_layout = QVBoxLayout(self)
+        outer_layout.setContentsMargins(12, 12, 12, 12)
+
+        container = QFrame()
+        container.setObjectName("alertContainer")
+        container.setStyleSheet(f"""
+            QFrame#alertContainer {{
+                background-color: #0F172A;
+                border: 2px solid {accent_color};
+                border-radius: 16px;
+            }}
+        """)
+
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(28)
+        shadow.setColor(QColor(accent_color))
+        shadow.setOffset(0, 4)
+        container.setGraphicsEffect(shadow)
+
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(24, 22, 24, 22)
+        layout.setSpacing(16)
+
+        # Header icon + title
+        header_layout = QHBoxLayout()
+        header_layout.setSpacing(14)
+
+        icon_box = QLabel(icon)
+        icon_box.setStyleSheet(f"""
+            QLabel {{
+                font-size: 26px;
+                background-color: rgba(255, 255, 255, 0.08);
+                border: 1px solid {accent_color};
+                border-radius: 24px;
+                min-width: 48px;
+                min-height: 48px;
+                max-width: 48px;
+                max-height: 48px;
+            }}
+        """)
+        icon_box.setAlignment(Qt.AlignCenter)
+        header_layout.addWidget(icon_box)
+
+        title_box = QVBoxLayout()
+        title_box.setSpacing(2)
+        lbl_title = QLabel(title)
+        lbl_title.setStyleSheet(f"font-size: 15px; font-weight: 800; color: {accent_color}; letter-spacing: 0.3px;")
+        lbl_sub = QLabel("Thông báo từ bảng điều khiển")
+        lbl_sub.setStyleSheet("font-size: 11px; color: #94A3B8;")
+        title_box.addWidget(lbl_title)
+        title_box.addWidget(lbl_sub)
+        header_layout.addLayout(title_box)
+        header_layout.addStretch()
+        layout.addLayout(header_layout)
+
+        # Message box
+        msg_card = QFrame()
+        msg_card.setStyleSheet("""
+            QFrame {
+                background-color: #1E293B;
+                border: 1px solid #334155;
+                border-radius: 10px;
+                padding: 12px 14px;
+            }
+        """)
+        msg_layout = QVBoxLayout(msg_card)
+        msg_lbl = QLabel(message)
+        msg_lbl.setWordWrap(True)
+        msg_lbl.setStyleSheet("font-size: 13px; color: #F8FAFC; line-height: 1.45;")
+        msg_layout.addWidget(msg_lbl)
+        layout.addWidget(msg_card)
+
+        # Button
+        btn = QPushButton(btn_text)
+        btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {btn_bg};
+                border: 1px solid {accent_color};
+                border-radius: 8px;
+                padding: 9px 22px;
+                font-size: 13px;
+                font-weight: 800;
+                color: #FFFFFF;
+            }}
+            QPushButton:hover {{
+                background-color: {btn_hover};
+            }}
+        """)
+        btn.clicked.connect(self.accept)
+        layout.addWidget(btn, alignment=Qt.AlignRight)
+
+        outer_layout.addWidget(container)
+
+
+# ==============================================================================
+# HỘP THOẠI XÁC NHẬN CẤU HÌNH HIỆN ĐẠI (CONFIRMATION MODAL)
+# ==============================================================================
+class ModernConfirmDialog(QDialog):
+    """Hộp thoại popup xác nhận thay đổi tham số cấu hình đẹp mắt, chuẩn UI hiện đại."""
+    def __init__(self, parent=None, title="XÁC NHẬN CẤU HÌNH", icon="⚙️",
+                 old_val="", new_val="", note="", confirm_btn_text="✓ Xác Nhận Áp Dụng"):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setFixedWidth(440)
+        self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+
+        outer_layout = QVBoxLayout(self)
+        outer_layout.setContentsMargins(12, 12, 12, 12)
+
+        container = QFrame()
+        container.setObjectName("dialogContainer")
+        container.setStyleSheet("""
+            QFrame#dialogContainer {
+                background-color: #0F172A;
+                border: 2px solid #38BDF8;
+                border-radius: 16px;
+            }
+        """)
+
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(28)
+        shadow.setColor(QColor(56, 189, 248, 90))
+        shadow.setOffset(0, 4)
+        container.setGraphicsEffect(shadow)
+
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(24, 22, 24, 22)
+        layout.setSpacing(16)
+
+        # Header icon + title
+        header_layout = QHBoxLayout()
+        header_layout.setSpacing(14)
+
+        icon_box = QLabel(icon)
+        icon_box.setStyleSheet("""
+            QLabel {
+                font-size: 28px;
+                background-color: rgba(56, 189, 248, 0.15);
+                border: 1px solid #38BDF8;
+                border-radius: 24px;
+                min-width: 48px;
+                min-height: 48px;
+                max-width: 48px;
+                max-height: 48px;
+            }
+        """)
+        icon_box.setAlignment(Qt.AlignCenter)
+        header_layout.addWidget(icon_box)
+
+        title_layout = QVBoxLayout()
+        title_layout.setSpacing(2)
+        title_lbl = QLabel(title)
+        title_lbl.setStyleSheet("font-size: 15px; font-weight: 800; color: #38BDF8; letter-spacing: 0.3px;")
+        sub_lbl = QLabel("Vui lòng xác nhận thay đổi để nạp xuống STM32")
+        sub_lbl.setStyleSheet("font-size: 11px; color: #94A3B8;")
+        title_layout.addWidget(title_lbl)
+        title_layout.addWidget(sub_lbl)
+        header_layout.addLayout(title_layout)
+        header_layout.addStretch()
+        layout.addLayout(header_layout)
+
+        # Comparison card
+        card = QFrame()
+        card.setStyleSheet("""
+            QFrame {
+                background-color: #1E293B;
+                border: 1px solid #334155;
+                border-radius: 12px;
+                padding: 12px;
+            }
+        """)
+        card_layout = QVBoxLayout(card)
+        card_layout.setSpacing(10)
+
+        # Row comparison
+        val_row = QHBoxLayout()
+        val_row.setSpacing(12)
+
+        old_col = QVBoxLayout()
+        old_col.setSpacing(2)
+        lbl_old_t = QLabel("GIÁ TRỊ HIỆN TẠI")
+        lbl_old_t.setStyleSheet("font-size: 10px; font-weight: bold; color: #64748B;")
+        lbl_old_v = QLabel(old_val if old_val else "--")
+        lbl_old_v.setStyleSheet("font-size: 13px; font-weight: bold; color: #94A3B8;")
+        old_col.addWidget(lbl_old_t)
+        old_col.addWidget(lbl_old_v)
+        val_row.addLayout(old_col)
+
+        arrow_lbl = QLabel("➔")
+        arrow_lbl.setStyleSheet("font-size: 20px; font-weight: 800; color: #38BDF8;")
+        arrow_lbl.setAlignment(Qt.AlignCenter)
+        val_row.addWidget(arrow_lbl)
+
+        new_col = QVBoxLayout()
+        new_col.setSpacing(2)
+        lbl_new_t = QLabel("GIÁ TRỊ MỚI ÁP DỤNG")
+        lbl_new_t.setStyleSheet("font-size: 10px; font-weight: bold; color: #38BDF8;")
+        lbl_new_v = QLabel(new_val)
+        lbl_new_v.setStyleSheet("font-size: 13px; font-weight: 800; color: #10B981;")
+        new_col.addWidget(lbl_new_t)
+        new_col.addWidget(lbl_new_v)
+        val_row.addLayout(new_col)
+
+        card_layout.addLayout(val_row)
+
+        if note:
+            sep = QFrame()
+            sep.setFrameShape(QFrame.HLine)
+            sep.setStyleSheet("background-color: #334155; max-height: 1px;")
+            card_layout.addWidget(sep)
+
+            lbl_note = QLabel(f"💡 {note}")
+            lbl_note.setWordWrap(True)
+            lbl_note.setStyleSheet("font-size: 12px; color: #CBD5E1; line-height: 1.4;")
+            card_layout.addWidget(lbl_note)
+
+        layout.addWidget(card)
+
+        # Action Buttons
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(12)
+
+        btn_cancel = QPushButton("✕ Giữ Nguyên")
+        btn_cancel.setStyleSheet("""
+            QPushButton {
+                background-color: #334155;
+                border: 1px solid #475569;
+                border-radius: 8px;
+                padding: 9px 18px;
+                font-size: 13px;
+                font-weight: bold;
+                color: #CBD5E1;
+            }
+            QPushButton:hover {
+                background-color: #475569;
+                color: #FFFFFF;
+            }
+        """)
+        btn_cancel.clicked.connect(self.reject)
+
+        btn_confirm = QPushButton(confirm_btn_text)
+        btn_confirm.setStyleSheet("""
+            QPushButton {
+                background-color: #0284C7;
+                border: 1px solid #38BDF8;
+                border-radius: 8px;
+                padding: 9px 20px;
+                font-size: 13px;
+                font-weight: 800;
+                color: #FFFFFF;
+            }
+            QPushButton:hover {
+                background-color: #0EA5E9;
+                border-color: #7DD3FC;
+            }
+        """)
+        btn_confirm.clicked.connect(self.accept)
+
+        btn_layout.addWidget(btn_cancel)
+        btn_layout.addWidget(btn_confirm)
+        layout.addLayout(btn_layout)
+
+        outer_layout.addWidget(container)
+
+
+# ==============================================================================
 # CỬA SỔ CHÍNH DASHBOARD
 # ==============================================================================
 class FireAlarmDashboard(QMainWindow):
@@ -193,6 +489,9 @@ class FireAlarmDashboard(QMainWindow):
         self.reader_thread = None
         self.alarm_flashing = False
         self.flash_state = False
+        self.prev_verify_time_idx = 1
+        self.prev_alarm_hold_idx = 2
+        self.prev_duration_idx = 2
 
         self.init_ui()
 
@@ -319,6 +618,7 @@ class FireAlarmDashboard(QMainWindow):
         self.cb_duration.addItem("5 Giây (5000ms)", 5000)
         self.cb_duration.addItem("10 Giây (10000ms)", 10000)
         self.cb_duration.setCurrentIndex(2) # Mặc định 2s
+        self.cb_duration.currentIndexChanged.connect(self.handle_duration_changed)
         dur_layout.addWidget(self.cb_duration)
         ctrl_layout.addLayout(dur_layout)
 
@@ -352,19 +652,33 @@ class FireAlarmDashboard(QMainWindow):
         self.cb_alarm_hold = QComboBox()
         self.cb_alarm_hold.addItem("1 Giây (1000ms)", 1000)
         self.cb_alarm_hold.addItem("2 Giây (2000ms)", 2000)
-        self.cb_alarm_hold.addItem("3 Giây (3000ms)", 3000)
+        self.cb_alarm_hold.addItem("3 Giây (3000ms - Khuyên dùng)", 3000)
         self.cb_alarm_hold.addItem("5 Giây (5000ms)", 5000)
         self.cb_alarm_hold.addItem("10 Giây (10000ms)", 10000)
-        self.cb_alarm_hold.setCurrentIndex(1) # Mặc định 2s
+        self.cb_alarm_hold.setCurrentIndex(2) # Mặc định 3s
         self.cb_alarm_hold.currentIndexChanged.connect(self.handle_alarm_hold_changed)
         alarm_cfg_layout.addWidget(self.cb_alarm_hold)
         ctrl_layout.addLayout(alarm_cfg_layout)
+
+        # Cấu hình chống báo cháy giả (thời gian giữ lửa liên tục để kích hoạt)
+        verify_cfg_layout = QHBoxLayout()
+        verify_cfg_layout.addWidget(QLabel("🛡️ Lọc chống báo giả:"))
+        self.cb_verify_time = QComboBox()
+        self.cb_verify_time.addItem("Nhanh (500ms)", 500)
+        self.cb_verify_time.addItem("Chuẩn (1000ms - Khuyên dùng)", 1000)
+        self.cb_verify_time.addItem("Chống mở cửa (1.5s)", 1500)
+        self.cb_verify_time.addItem("Rất chắc chắn (2.0s)", 2000)
+        self.cb_verify_time.addItem("An toàn cao (3.0s)", 3000)
+        self.cb_verify_time.setCurrentIndex(1) # Mặc định 1000ms
+        self.cb_verify_time.currentIndexChanged.connect(self.handle_verify_time_changed)
+        verify_cfg_layout.addWidget(self.cb_verify_time)
+        ctrl_layout.addLayout(verify_cfg_layout)
 
         # Hàng nút Hệ Thống
         sys_btn_layout = QHBoxLayout()
         self.btn_auto = QPushButton("🤖 Chế Độ Tự Động")
         self.btn_auto.setObjectName("btnAuto")
-        self.btn_auto.clicked.connect(lambda: self.send_json({"mode": "auto"}))
+        self.btn_auto.clicked.connect(self.handle_auto_mode)
         self.btn_get_status = QPushButton("🔄 Đọc Trạng Thái")
         self.btn_get_status.clicked.connect(lambda: self.send_json({"get": "status"}))
         sys_btn_layout.addWidget(self.btn_auto)
@@ -445,6 +759,17 @@ class FireAlarmDashboard(QMainWindow):
         else:
             self.cb_ports.addItem("Không tìm thấy cổng nào", "")
 
+    def show_alert(self, title, message, icon="⚠️", alert_type="warning", btn_text="✓ Đã Hiểu"):
+        dlg = ModernAlertModal(
+            parent=self,
+            title=title,
+            message=message,
+            icon=icon,
+            alert_type=alert_type,
+            btn_text=btn_text
+        )
+        dlg.exec_()
+
     def toggle_connection(self):
         if self.ser and self.ser.is_open:
             self.disconnect_serial()
@@ -454,7 +779,7 @@ class FireAlarmDashboard(QMainWindow):
     def connect_serial(self):
         port = self.cb_ports.currentData()
         if not port:
-            QMessageBox.warning(self, "Lỗi", "Vui lòng chọn cổng Serial hợp lệ!")
+            self.show_alert("Cổng Không Hợp Lệ", "Vui lòng chọn cổng Serial hợp lệ từ danh sách!", "⚠️", "warning")
             return
 
         baud = int(self.cb_baud.currentText())
@@ -485,7 +810,7 @@ class FireAlarmDashboard(QMainWindow):
             self.send_json({"get": "status"})
 
         except Exception as e:
-            QMessageBox.critical(self, "Lỗi kết nối", f"Không thể mở cổng {port}:\n{str(e)}")
+            self.show_alert("Lỗi Kết Nối Serial", f"Không thể mở cổng <b>{port}</b>:\n{str(e)}\n\n💡 <i>Mẹo: Kiểm tra xem Minicom hoặc terminal khác có đang chiếm cổng không.</i>", "❌", "danger")
 
     def disconnect_serial(self):
         if self.reader_thread:
@@ -517,7 +842,7 @@ class FireAlarmDashboard(QMainWindow):
 
     def handle_connection_lost(self, err_msg):
         self.disconnect_serial()
-        QMessageBox.warning(self, "Mất kết nối", f"Mất kết nối với thiết bị:\n{err_msg}")
+        self.show_alert("Mất Kết Nối", f"Mất kết nối với thiết bị STM32:\n{err_msg}", "🔌", "warning")
 
     def handle_btn_led_on(self):
         dur = self.cb_duration.currentData()
@@ -533,14 +858,107 @@ class FireAlarmDashboard(QMainWindow):
         else:
             self.send_json({"buzzer": 1})
 
+    def handle_duration_changed(self):
+        new_idx = self.cb_duration.currentIndex()
+        if new_idx == self.prev_duration_idx:
+            return
+
+        old_text = self.cb_duration.itemText(self.prev_duration_idx)
+        new_text = self.cb_duration.itemText(new_idx)
+
+        dlg = ModernConfirmDialog(
+            parent=self,
+            title="XÁC NHẬN HẸN GIỜ ĐIỀU KHIỂN",
+            icon="⏱️",
+            old_val=old_text,
+            new_val=new_text,
+            note="Khi bấm Bật Đèn hoặc Bật Còi thủ công, thiết bị sẽ tự động đếm ngược và ngắt theo thời gian này.",
+            confirm_btn_text="✓ Xác Nhận Đặt"
+        )
+        if dlg.exec_() == QDialog.Accepted:
+            self.prev_duration_idx = new_idx
+            self.log_message(f"⏱️ Đã đặt thời lượng tự ngắt: {new_text}", "#38BDF8")
+        else:
+            self.cb_duration.blockSignals(True)
+            self.cb_duration.setCurrentIndex(self.prev_duration_idx)
+            self.cb_duration.blockSignals(False)
+
     def handle_alarm_hold_changed(self):
-        hold_ms = self.cb_alarm_hold.currentData()
-        if hold_ms > 0:
+        new_idx = self.cb_alarm_hold.currentIndex()
+        if new_idx == self.prev_alarm_hold_idx:
+            return
+
+        old_text = self.cb_alarm_hold.itemText(self.prev_alarm_hold_idx)
+        new_text = self.cb_alarm_hold.itemText(new_idx)
+        hold_ms = self.cb_alarm_hold.itemData(new_idx)
+
+        dlg = ModernConfirmDialog(
+            parent=self,
+            title="XÁC NHẬN THỜI GIAN CÒI HÚ",
+            icon="🔥",
+            old_val=old_text,
+            new_val=new_text,
+            note="Sau khi ngọn lửa đã tắt hoặc cảm biến không còn thấy lửa, còi báo động và đèn LED sẽ tiếp tục duy trì cảnh báo trong thời gian này để đảm bảo an toàn tuyệt đối.",
+            confirm_btn_text="✓ Xác Nhận Áp Dụng"
+        )
+        if dlg.exec_() == QDialog.Accepted:
+            self.prev_alarm_hold_idx = new_idx
             self.send_json({"alarm_hold": hold_ms})
+            self.log_message(f"🔥 Đã cập nhật thời gian còi hú sau dập lửa: {new_text}", "#F59E0B")
+        else:
+            self.cb_alarm_hold.blockSignals(True)
+            self.cb_alarm_hold.setCurrentIndex(self.prev_alarm_hold_idx)
+            self.cb_alarm_hold.blockSignals(False)
+
+    def handle_verify_time_changed(self):
+        new_idx = self.cb_verify_time.currentIndex()
+        if new_idx == self.prev_verify_time_idx:
+            return
+
+        old_text = self.cb_verify_time.itemText(self.prev_verify_time_idx)
+        new_text = self.cb_verify_time.itemText(new_idx)
+        vt_ms = self.cb_verify_time.itemData(new_idx)
+
+        dlg = ModernConfirmDialog(
+            parent=self,
+            title="XÁC NHẬN LỌC CHỐNG BÁO GIẢ",
+            icon="🛡️",
+            old_val=old_text,
+            new_val=new_text,
+            note="Lọc bỏ ánh sáng chói chập chờn khi mở cửa phòng hoặc bật đèn. Chỉ kích hoạt báo động khi cảm biến bắt được lửa liên tục vượt mốc thời gian này.",
+            confirm_btn_text="✓ Xác Nhận Áp Dụng"
+        )
+        if dlg.exec_() == QDialog.Accepted:
+            self.prev_verify_time_idx = new_idx
+            self.send_json({"verify_time": vt_ms})
+            self.log_message(f"🛡️ Đã cập nhật lọc chống báo giả: {new_text}", "#38BDF8")
+        else:
+            self.cb_verify_time.blockSignals(True)
+            self.cb_verify_time.setCurrentIndex(self.prev_verify_time_idx)
+            self.cb_verify_time.blockSignals(False)
+
+    def handle_auto_mode(self):
+        dlg = ModernConfirmDialog(
+            parent=self,
+            title="KÍCH HOẠT CHẾ ĐỘ TỰ ĐỘNG",
+            icon="🤖",
+            old_val="Thủ công / Đang can thiệp",
+            new_val="Tự Động (Auto Monitor)",
+            note="Hệ thống sẽ chuyển sang chế độ tự động giám sát. Cảm biến lửa sẽ tự động kích hoạt còi và đèn cảnh báo khi phát hiện nguy cơ cháy.",
+            confirm_btn_text="✓ Kích Hoạt Ngay"
+        )
+        if dlg.exec_() == QDialog.Accepted:
+            self.send_json({"mode": "auto"})
+            self.log_message("🤖 Đã chuyển hệ thống về chế độ TỰ ĐỘNG giám sát cháy.", "#8B5CF6")
 
     def send_json(self, data_dict):
         if not self.ser or not self.ser.is_open:
-            QMessageBox.warning(self, "Chưa kết nối", "Vui lòng kết nối Serial trước khi điều khiển!")
+            self.show_alert(
+                "Chưa Kết Nối Thiết Bị",
+                "Vui lòng chọn cổng COM/TTY và bấm nút <b>⚡ Kết Nối</b> trước khi gửi lệnh điều khiển!",
+                "⚠️",
+                "warning"
+            )
             return
 
         json_str = json.dumps(data_dict) + "\n"
@@ -564,7 +982,12 @@ class FireAlarmDashboard(QMainWindow):
             except Exception as e:
                 self.log_message(f"[TX LỖI] {str(e)}", "#EF4444")
         else:
-            QMessageBox.warning(self, "Chưa kết nối", "Vui lòng kết nối Serial trước!")
+            self.show_alert(
+                "Chưa Kết Nối Thiết Bị",
+                "Vui lòng kết nối cổng Serial trước khi gửi lệnh JSON tùy ý!",
+                "⚠️",
+                "warning"
+            )
 
     def handle_serial_line(self, line):
         self.log_message(f"[RX] {line}", "#34D399")
@@ -575,6 +998,25 @@ class FireAlarmDashboard(QMainWindow):
             pass # Bỏ qua nếu là chuỗi log thông thường
 
     def update_telemetry(self, data):
+        # 0. Sự kiện hệ thống và cảm biến
+        if "event" in data:
+            evt = data["event"]
+            if evt == "WARN_CALIB":
+                self.lbl_fire_icon.setText("☀️")
+                self.lbl_fire_text.setText("CHÓI SÁNG (PA1=0)")
+                self.lbl_fire_text.setStyleSheet("font-size: 13px; font-weight: 800; color: #F59E0B;")
+                self.card_fire.setStyleSheet("""
+                    QFrame {
+                        background-color: #451A03;
+                        border: 2px solid #F59E0B;
+                        border-radius: 12px;
+                        padding: 12px;
+                    }
+                """)
+                self.log_message(f"⚠️ [CHÓI SÁNG] {data.get('msg', 'Cảm biến đang bị chói hồng ngoại! Vặn nhỏ biến trở cho LED D0 tắt.')}", "#F59E0B")
+            elif evt == "SYSTEM_ARMED":
+                self.log_message(f"🛡️ [SẴN SÀNG] {data.get('msg', 'Mức nền an toàn đã xác lập. Hệ thống bắt đầu giám sát!')}", "#10B981")
+
         # 1. Trạng thái lửa
         if "fire" in data:
             fire = bool(data["fire"])
